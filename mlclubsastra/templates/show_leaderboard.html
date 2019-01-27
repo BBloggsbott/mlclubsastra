@@ -1,0 +1,24 @@
+{% extends "layout.html" %}
+{% block body %}
+{% if error %}<p class=error><strong>Error:</strong> {{ error }}{% endif %}
+{% if success %}<p class=success> {{ success }}{% endif %}
+{% if currenttask %}
+<p>Current Task: {{ currenttask.task }}</p>
+{% endif %}
+{% if members %}
+<table class="scoreboard">
+    <tr>
+        <th>Name</th>
+        <th>Score</th>
+    </tr>
+{% for member in members %}
+<tr>
+    <td><a href="https://kaggle.com/{{ member.kaggle }}"><p class='name'>{{ member.name }}</p></td></a>
+    <td>{{member.score}}</td>
+</tr>
+{% endfor %}
+{% else %}
+<div><em>Unbelievable. No entries here so far</div>
+</table>
+{% endif %}
+{% endblock %}

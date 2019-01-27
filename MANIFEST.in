@@ -1,0 +1,3 @@
+graft mlclubsastra/templates
+graft mlclubsastra/static
+include mlclubsastra/schema.sql

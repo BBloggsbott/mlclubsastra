@@ -1,0 +1,13 @@
+{% extends "layout.html" %}
+{% block body %}
+  <h2>Add Task</h2>
+  {% if error %}<p class=error><strong>Error:</strong> {{ error }}{% endif %}
+  {% if success %}<p class=success> {{ success }}{% endif %}
+  <form action="{{ url_for('addtask') }}" method=post>
+    <dl>
+        <dt>Task:
+        <dd><input type=text name=task>
+        <dd><input type=submit value=Register>
+    </dl>
+  </form>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "layout.html" %}
+{% block body %}
+  <h2> Admin Controls</h2>
+  {% if error %}<p class=error><strong>Error:</strong> {{ error }}{% endif %}
+    {% if success %}<p class=success> {{ success }}{% endif %}
+  <form action="{{ url_for('admincontrols') }}" method=post>
+    <dl>
+      <dt>Member:
+      <dd><input type=text name=member>
+      <dt>Add to points:
+      <dd><input type=text name=points>
+      <dt>Password:
+      <dd><input type=password name=password>
+      <dd><input type=submit value=Login>
+    </dl>
+  </form>
+{% endblock %}

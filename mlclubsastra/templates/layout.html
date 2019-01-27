@@ -1,0 +1,28 @@
+<!doctype html>
+<title>MLCLUB@SASTRA</title>
+<link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
+<div class=page>
+  <a href="/"><h1>MLCLUB<span class="light-blue">@</span>SASTRA</h1></a>
+  <div class=metanav>
+  {% if not session.logged_in %}
+    <a href="{{ url_for('login') }}">log in</a> | 
+    <a href="{{ url_for('register') }}">register</a> | 
+    {% if not session.admin %}
+    <a href="{{ url_for('admin') }}">admin</a>
+  {% else %}
+  <a href="{{ url_for('admincontrols') }}">admin controls</a> | 
+  <a href="{{ url_for('addtask') }}">add task</a> | 
+  <a href="{{ url_for('viewsubmissions') }}">view submissions</a> | 
+  <a href="{{ url_for('adminlogout') }}">admin logout</a>
+  {% endif %}
+    {% else %}
+    <a href="{{ url_for('submit') }}">submit</a> | 
+    <a href="{{ url_for('logout') }}">log out</a>
+  {% endif %}
+
+  </div>
+  {% for message in get_flashed_messages() %}
+    <div class=flash>{{ message }}</div>
+  {% endfor %}
+  {% block body %}{% endblock %}
+</div>

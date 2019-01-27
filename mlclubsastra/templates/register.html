@@ -1,0 +1,19 @@
+{% extends "layout.html" %}
+{% block body %}
+  <h2>Login</h2>
+  {% if error %}<p class=error><strong>Error:</strong> {{ error }}{% endif %}
+  {% if success %}<p class=success> {{ success }}{% endif %}
+  <form action="{{ url_for('register') }}" method=post>
+    <dl>
+        <dt>Register Number:
+        <dd><input type=text name=regno required>
+        <dt>Password:
+        <dd><input type=password name=password required>
+        <dt>Name:
+        <dd><input type=text name=name required>
+        <dt>Kaggle Username:
+        <dd><input type=text name=kaggle required>
+        <dd><input type=submit value=Register>
+    </dl>
+  </form>
+{% endblock %}
