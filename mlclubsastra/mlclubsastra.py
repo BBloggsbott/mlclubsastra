@@ -9,9 +9,9 @@ app.config.from_object(__name__)
 
 app.config.update(dict(
     DATABASE=os.path.join(app.root_path, 'mlclubsastra.db'),
-    SECRET_KEY='123456789',
+    SECRET_KEY='96341257',
     USERNAME='admin',
-    PASSWORD='default'
+    PASSWORD='password'
 ))
 app.config.from_envvar('mlclubsastra_SETTINGS', silent=True)
 
@@ -41,6 +41,11 @@ def init_db():
         db.cursor().executescript(f.read())
     db.commit()
 
+def get_tasks(n = 1):
+    db = get_db()
+    cur = db.execute('select * from tasks order by ts limit {}'.format(n))
+    return cur.fetchall()
+
 def reset_db():
     db = get_db()
     db.execute('delete * from members')
@@ -62,10 +67,10 @@ def show_entries():
     db = get_db()
     cur = db.execute('select * from members order by score desc')
     members = cur.fetchall()
-    cur = db.execute('select * from tasks orderby limit 1')
+    cur = db.execute('select * from tasks order by ts limit 1')
     tasks = cur.fetchall()
     if(len(tasks)==0):
-        return render_template('show_leaderboard.html', members=members, currenttask = None)    
+        return render_template('show_leaderboard.html', members=members, currenttask = None)
     return render_template('show_leaderboard.html', members=members, currenttask = tasks[0])
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -182,7 +187,8 @@ def submit():
     success = None
     if request.method == 'POST':
         db = get_db()
-        db.execute("insert into submissions (regno, sublink) values ({},'{}')".format(session['regno'], request.form['sublink']))
+        task = get_tasks()[0]
+        db.execute("insert into submissions (regno, sublink, task) values ({},'{}','{}')".format(session['regno'], request.form['sublink'], task))
         db.commit()
         success="Submitted"
         return render_template('submit.html', success=success)
@@ -196,7 +202,35 @@ def viewsubmissions():
     except:
         return render_template('show_leaderboard.html', error='Not admin')
     db = get_db()
-    cur = db.execute('select * from submissions order by ts')
+    cur = db.execute("select * from submissions where task='{}' order by ts".format(session['task']))
     subs = cur.fetchall()
-    return render_template('viewsubmissions.html', subs = subs)
+    task = get_tasks()[0]
+    return render_template('viewsubmissions.html', subs = subs, task = task['task'])
+
+@app.route('/viewallsubs', methods=['GET', 'POST'])
+def viewallsubs():
+    try:
+        if not session['admin']:
+            return render_template('show_leaderboard.html', error='Not admin')
+    except:
+        return render_template('show_leaderboard.html', error='Not admin')
+    db = get_db()
+    cur = db.execute("select * from submissions order by ts")
+    subs = cur.fetchall()
+    return render_template('viewallsubs.html', subs = subs)
+
+@app.route('/removeuser', methods=['GET', 'POST'])
+def removeuser():
+    try:
+        if not session['admin']:
+            return render_template('show_leaderboard.html', error='Not admin')
+    except:
+        return render_template('show_leaderboard.html', error='Not admin')
+    if request.method == 'POST':
+        db = get_db()
+        db.execute("delete from members where regno={}".format(request.form['regno']))
+        db.commit()
+        success="Deleted"
+        return render_template('removeuser.html', success=success)
+    return render_template('removeuser.html')
 
