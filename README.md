@@ -4,7 +4,7 @@ The code for the [Machine Learning Club](https://mlclubsastra.herokuapp.com/) at
 To run, Clone this repo and execute the following commands:
 ```
 $ cd mlclubsastra
-$ sqite3 mlclubsastra/mlclubsastra.db < mlclubsastra/schema.sql
 $ pip install --editable .
+$ sqite3 mlclubsastra/mlclubsastra.db < mlclubsastra/schema.sql
 $ python run.py
 ```
