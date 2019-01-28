@@ -1,5 +1,5 @@
 # mlclubsastra
-The code for the mlclub@sastra site: https://mlclubsastra.herokuapp.com/
+The code for the [Machine Learning Club](https://mlclubsastra.herokuapp.com/) at SASTRA.
 
 To run, Clone this repo and execute the following commands:
 ```
