@@ -3,11 +3,11 @@
   <h2>Submission</h2>
   {% if error %}<p class=error><strong>Error:</strong> {{ error }}{% endif %}
   {% if success %}<p class=success> {{ success }}{% endif %}
-  <form action="{{ url_for('submit') }}" method=post>
+  <form action="{{ url_for('removeuser') }}" method=post>
     <dl>
-        <dt>Subission Link:
-        <dd><input type=text name=sublink>
-        <dd><input type=submit value=Submit>
+        <dt>Regno:
+        <dd><input type=text name=regno>
+        <dd><input type=submit value=Delete>
     </dl>
   </form>
 {% endblock %}

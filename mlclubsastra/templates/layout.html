@@ -5,14 +5,15 @@
   <a href="/"><h1>MLCLUB<span class="light-blue">@</span>SASTRA</h1></a>
   <div class=metanav>
   {% if not session.logged_in %}
+    {% if not session.admin %}
     <a href="{{ url_for('login') }}">log in</a> | 
     <a href="{{ url_for('register') }}">register</a> | 
-    {% if not session.admin %}
     <a href="{{ url_for('admin') }}">admin</a>
   {% else %}
   <a href="{{ url_for('admincontrols') }}">admin controls</a> | 
   <a href="{{ url_for('addtask') }}">add task</a> | 
   <a href="{{ url_for('viewsubmissions') }}">view submissions</a> | 
+  <a href="{{ url_for('removeuser') }}">remove user</a> | 
   <a href="{{ url_for('adminlogout') }}">admin logout</a>
   {% endif %}
     {% else %}
