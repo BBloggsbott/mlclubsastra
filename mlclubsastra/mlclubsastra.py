@@ -188,7 +188,7 @@ def submit():
     if request.method == 'POST':
         db = get_db()
         task = get_tasks()[0]
-        db.execute("insert into submissions (regno, sublink, task) values ({},'{}','{}')".format(session['regno'], request.form['sublink'], task))
+        db.execute("insert into submissions (regno, sublink, task) values ({},'{}','{}')".format(session['regno'], request.form['sublink'], task['task']))
         db.commit()
         success="Submitted"
         return render_template('submit.html', success=success)
@@ -202,9 +202,15 @@ def viewsubmissions():
     except:
         return render_template('show_leaderboard.html', error='Not admin')
     db = get_db()
-    cur = db.execute("select * from submissions where task='{}' order by ts".format(session['task']))
+    task = get_tasks()
+    print(len(task))
+    if(len(task) == 0):
+        return render_template('viewsubmissions.html', subs = None)
+    task = task[0]
+    print(task['task'])
+    cur = db.execute("select * from submissions where task='{}' order by ts".format(task['task']))
     subs = cur.fetchall()
-    task = get_tasks()[0]
+    print(len(subs))
     return render_template('viewsubmissions.html', subs = subs, task = task['task'])
 
 @app.route('/viewallsubs', methods=['GET', 'POST'])
