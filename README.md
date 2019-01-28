@@ -5,5 +5,6 @@ To run, Clone this repo and execute the following commands:
 ```
 $ cd mlclubsastra
 $ sqite3 mlclubsastra/mlclubsastra.db < mlclubsastra/schema.sql
+$ pip install --editable .
 $ python run.py
 ```
