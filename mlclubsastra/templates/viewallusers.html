@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+{% block body %}
+{% if members %}
+<h2>{{ task }}</h2>
+<table class="scoreboard">
+    <tr>
+        <th>Reg. No</th>
+        <th>Name</th>
+        <th>Score</th>
+    </tr>
+{% for member in members %}
+<tr>
+    <td>{{ member.regno }}</td>
+    <td><a href="https://kaggle.com/{{ member['kaggle'] }}">{{ member.name }}</a></td>
+    <td>{{ member.score }}</td>
+</tr>
+{% endfor %}
+{% else %}
+<div><em>Unbelievable. No entries here so far</div>
+</table>
+{% endif %}
+{% endblock %}

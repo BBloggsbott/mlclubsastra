@@ -9,13 +9,13 @@
     <tr>
         <th>Reg. No</th>
         <th>Sub Link</th>
-        <th>Sub Date</th>
+        <th>Sub Time(UTC)</th>
     </tr>
 {% for sub in subs %}
 <tr>
     <td>{{ sub.regno }}</td>
     <td><a href="{{ sub.sublink }}">Link</a></td>
-    <td>{{ sub.ts }}</td>
+    <td>{{ sub['time'] }}</td>
 </tr>
 {% endfor %}
 {% else %}

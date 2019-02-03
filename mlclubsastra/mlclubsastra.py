@@ -1,12 +1,14 @@
 import os
 import sqlite3
+import pymongo
+from pymongo import MongoClient
 import time
+import datetime
 from flask import Flask, request, session, g, redirect, url_for, abort, \
      render_template, flash
 
 app = Flask(__name__) 
 app.config.from_object(__name__)
-
 app.config.update(dict(
     DATABASE=os.path.join(app.root_path, 'mlclubsastra.db'),
     SECRET_KEY='96341257',
@@ -14,71 +16,35 @@ app.config.update(dict(
     PASSWORD='password'
 ))
 app.config.from_envvar('mlclubsastra_SETTINGS', silent=True)
+mongo_client = MongoClient('mongodb://username:password@db:port/mlclubsastra')
+def get_mongo_db():
+    return mongo_client.mlclubsastra
 
-def connect_db():
-    """Connects to the specific database."""
-    rv = sqlite3.connect(app.config['DATABASE'])
-    rv.row_factory = sqlite3.Row
-    return rv
-
-def get_db():
-    """Opens a new database connection if there is none yet for the
-    current application context.
-    """
-    if not hasattr(g, 'sqlite_db'):
-        g.sqlite_db = connect_db()
-    return g.sqlite_db
-
-@app.teardown_appcontext
-def close_db(error):
-    """Closes the database again at the end of the request."""
-    if hasattr(g, 'sqlite_db'):
-        g.sqlite_db.close()
-
-def init_db():
-    db = get_db()
-    with app.open_resource('schema.sql', mode='r') as f:
-        db.cursor().executescript(f.read())
-    db.commit()
 
 def get_tasks(n = 1):
-    db = get_db()
-    cur = db.execute('select * from tasks order by ts limit {}'.format(n))
-    return cur.fetchall()
+    db = get_mongo_db()
+    tasks = db.tasks
+    try:
+        return tasks.find().sort('time', pymongo.DESCENDING)[0]
+    except:
+        return None
 
-def reset_db():
-    db = get_db()
-    db.execute('delete * from members')
-    db.commit()
-
-@app.cli.command('initdb')
-def initdb_command():
-    """Initializes the database."""
-    init_db()
-    print('Initialized the database.')
-
-@app.cli.command('resetdb')
-def resetdb_command():
-    reset_db()
-    print('DB reset')
 
 @app.route('/')
 def show_entries():
-    db = get_db()
-    cur = db.execute('select * from members order by score desc')
-    members = cur.fetchall()
-    cur = db.execute('select * from tasks order by ts limit 1')
-    tasks = cur.fetchall()
-    if(len(tasks)==0):
-        return render_template('show_leaderboard.html', members=members, currenttask = None)
-    return render_template('show_leaderboard.html', members=members, currenttask = tasks[0])
+    db = get_mongo_db()
+    members_table = db.members
+    members = members_table.find()
+    tasks = get_tasks()
+    return render_template('show_leaderboard.html', members=members, currenttask = tasks)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     error = None
     if request.method == 'POST':
-        db = get_db()
-        users = db.execute('select * from members where regno='+str(request.form['username']))
+        db = get_mongo_db()
+        members_table = db.members
+        users = members_table.find({'regno':int(request.form['username'])})
         for user in users:
             if int(request.form['username']) != int(user['regno']):
                 error = 'Invalid username'
@@ -99,13 +65,19 @@ def register():
     success = None
     if request.method == 'POST':
         try:
-            db = get_db()
-            users = db.execute('select * from members where regno='+str(request.form['regno']))
+            db = get_mongo_db()
+            members_table = db.members
+            users = members_table.find({'regno':int(request.form['regno'])})
             for user in users:
                 error = 'User exists'
                 return render_template('register.html', error=error)
-            db.execute("insert into members (regno, name, password, kaggle) values ({}, '{}', '{}', '{}')".format(request.form['regno'], request.form['name'], request.form['password'], request.form['kaggle']))
-            db.commit()
+            members_table.insert_one({
+                "regno": int(request.form['regno']),
+                'name': request.form['name'],
+                'password': request.form['password'],
+                'score': 0,
+                'kaggle': request.form['kaggle']
+            })
             success="User added"
             return render_template('register.html', success=success)
         except Exception:
@@ -149,17 +121,27 @@ def admincontrols():
         return render_template('show_leaderboard.html', error='Not admin')
     if request.method == 'POST':
         message = None
-        db = get_db()
-        """print(int(request.form['member'])==120003366)
-        print(int(request.form['points'])==45)
-        print(request.form['password']=='')"""
+        db = get_mongo_db()
+        members_table = db.members
         if(request.form['password']!=''):
-            db.execute("update members set password='{}' where regno={}".format(request.form['password'], request.form['member']))
-            db.commit()
+            members_table.update_one(
+                {'regno': int(request.form['member'])},
+                {
+                    '$set': {
+                        'password': request.form['password']
+                    }
+                }
+            )
             message='Password updated'
             return render_template('admin_controls.html', success=message)
-        db.execute("update members set score=score+{} where regno = {}".format(request.form['points'], request.form['member']))
-        db.commit()
+        members_table.update_one(
+            {'regno': int(request.form['member'])},
+            {
+                '$inc': {
+                    'score': int(request.form['points'])
+                }
+            }, upsert=False
+        )
         message='Points updated'
         return render_template('admin_controls.html', success=message)
     return render_template('admin_controls.html')        
@@ -174,9 +156,12 @@ def addtask():
     error = None
     success = None
     if request.method == 'POST':
-        db = get_db()
-        db.execute("insert into tasks (task) values ('{}')".format(request.form['task']))
-        db.commit()
+        db = get_mongo_db()
+        tasks_table = db.tasks
+        tasks_table.insert_one({
+            'task': request.form['task'],
+            'time': datetime.datetime.utcnow()
+        })
         success="Task added"
         return render_template('addtask.html', success=success)
     return render_template('addtask.html')
@@ -186,10 +171,15 @@ def submit():
     error = None
     success = None
     if request.method == 'POST':
-        db = get_db()
-        task = get_tasks()[0]
-        db.execute("insert into submissions (regno, sublink, task) values ({},'{}','{}')".format(session['regno'], request.form['sublink'], task['task']))
-        db.commit()
+        db = get_mongo_db()
+        task = get_tasks()['task']
+        submissions_table = db.submissions
+        submissions_table.insert_one({
+            'regno':    int(session['regno']),
+            'sublink':  request.form['sublink'],
+            'task':     task,
+            'time':     datetime.datetime.utcnow()
+        })
         success="Submitted"
         return render_template('submit.html', success=success)
     return render_template('submit.html')
@@ -201,17 +191,17 @@ def viewsubmissions():
             return render_template('show_leaderboard.html', error='Not admin')
     except:
         return render_template('show_leaderboard.html', error='Not admin')
-    db = get_db()
+    db = get_mongo_db()
     task = get_tasks()
-    print(len(task))
+    #print(len(task))
     if(len(task) == 0):
         return render_template('viewsubmissions.html', subs = None)
-    task = task[0]
-    print(task['task'])
-    cur = db.execute("select * from submissions where task='{}' order by ts".format(task['task']))
-    subs = cur.fetchall()
-    print(len(subs))
-    return render_template('viewsubmissions.html', subs = subs, task = task['task'])
+    task = task['task']
+    submissions_table = db.submissions
+    subs = submissions_table.find({
+        'task': task
+    }).sort('time', pymongo.ASCENDING)
+    return render_template('viewsubmissions.html', subs = subs, task = task)
 
 @app.route('/viewallsubs', methods=['GET', 'POST'])
 def viewallsubs():
@@ -220,9 +210,9 @@ def viewallsubs():
             return render_template('show_leaderboard.html', error='Not admin')
     except:
         return render_template('show_leaderboard.html', error='Not admin')
-    db = get_db()
-    cur = db.execute("select * from submissions order by ts")
-    subs = cur.fetchall()
+    db = get_mongo_db()
+    submissions_table = db.submissions
+    subs = submissions_table.find().sort('time', pymongo.ASCENDING)
     return render_template('viewallsubs.html', subs = subs)
 
 @app.route('/removeuser', methods=['GET', 'POST'])
@@ -233,10 +223,24 @@ def removeuser():
     except:
         return render_template('show_leaderboard.html', error='Not admin')
     if request.method == 'POST':
-        db = get_db()
-        db.execute("delete from members where regno={}".format(request.form['regno']))
-        db.commit()
+        db = get_mongo_db()
+        members = db.members
+        members.delete_many({
+            'regno':    int(request.form['regno'])
+        })
         success="Deleted"
         return render_template('removeuser.html', success=success)
     return render_template('removeuser.html')
 
+@app.route('/viewallusers', methods=['GET', 'POST'])
+def viewallusers():
+    try:
+        if not session['admin']:
+            return render_template('show_leaderboard.html', error='Not admin')
+    except:
+        return render_template('show_leaderboard.html', error='Not admin')
+    db = get_mongo_db()
+    members_table = db.members
+    members = members_table.find()
+    print(members.count())  #.sort('name', pymongo.ASCENDING)
+    return render_template('viewallusers.html', members = members)
