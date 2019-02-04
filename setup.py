@@ -5,7 +5,7 @@ setup(
     packages=['mlclubsastra'],
     include_package_data=True,
     install_requires=[
-        'flask',
+        'flask','pymongo'
     ],
     setup_requires=[
         'pytest-runner',

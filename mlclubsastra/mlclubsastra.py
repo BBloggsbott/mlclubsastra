@@ -1,5 +1,4 @@
 import os
-import sqlite3
 import pymongo
 from pymongo import MongoClient
 import time
@@ -16,7 +15,7 @@ app.config.update(dict(
     PASSWORD='password'
 ))
 app.config.from_envvar('mlclubsastra_SETTINGS', silent=True)
-mongo_client = MongoClient('mongodb://username:password@db:port/mlclubsastra')
+mongo_client = MongoClient('mongodb://username:password@ip:port/mlclubsastra')
 def get_mongo_db():
     return mongo_client.mlclubsastra
 
@@ -228,7 +227,7 @@ def removeuser():
         members.delete_many({
             'regno':    int(request.form['regno'])
         })
-        success="Deleted"
+        success="User Removed"
         return render_template('removeuser.html', success=success)
     return render_template('removeuser.html')
 
@@ -241,6 +240,6 @@ def viewallusers():
         return render_template('show_leaderboard.html', error='Not admin')
     db = get_mongo_db()
     members_table = db.members
-    members = members_table.find()
+    members = members_table.find().sort('name', pymongo.ASCENDING)
     print(members.count())  #.sort('name', pymongo.ASCENDING)
     return render_template('viewallusers.html', members = members)
